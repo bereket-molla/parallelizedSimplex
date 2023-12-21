@@ -9,7 +9,7 @@ import Data.Ord (comparing)
  This implementation assumes that the problem is in standard form:
 
  1) All constraints are linear inequalities of the form: a^T * x <= b,
-   where a and x are vectors, and b is a scalar. Each constraint represents
+   where a and x are vectors, and b is a constants vector. Each constraint represents
    one row of the matrix equation A * x <= b.
 
  2) All variable values (elements of vector x) are non-negative.
