@@ -13,7 +13,7 @@ parseMPSFile filePath = do
 
 main :: IO ()
 main = do
-    lp <- parseMPSFile "13_13_20_1.mps"
+    lp <- parseMPSFile "matrix.mps" -- your MPS file
 
     let tableau = initializeTableau lp
     -- putStrLn "initialized tableau:"
