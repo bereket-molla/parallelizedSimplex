@@ -2,7 +2,7 @@ module Simplex where
 
 import Data.List (minimumBy)
 import Data.Ord (comparing)
-
+import Control.Parallel.Strategies (parMap, rdeepseq)
 
 {-
 
@@ -62,8 +62,8 @@ findPivotRow tableau pivotCol =
        else Just $ fst $ minimumBy (comparing snd) $ zip [0..] ratios
 
 
-performPivot :: Tableau -> Int -> Int -> Tableau
-performPivot tableau pivotRow pivotCol = 
+performPivotSingleThreaded :: Tableau -> Int -> Int -> Tableau
+performPivotSingleThreaded tableau pivotRow pivotCol = 
     let pivotElem = (tableau !! pivotRow) !! pivotCol
         newRow = map (/ pivotElem) (tableau !! pivotRow)
     
@@ -73,6 +73,17 @@ performPivot tableau pivotRow pivotCol =
                                              in zipWith (\a b -> a - factor * b) row newRow) [0..] tableau
     in newTableau
 
+performPivot :: Tableau -> Int -> Int -> Tableau
+performPivot tableau pivotRow pivotCol =
+    let pivotElem = tableau !! pivotRow !! pivotCol
+        newRow = map (/ pivotElem) (tableau !! pivotRow)
+    in parMap rdeepseq (updateRow newRow pivotRow pivotCol) (zip [0..] tableau)
+  where
+    updateRow newRow pivotRow pivotCol (i, row) =
+      if i == pivotRow
+      then newRow
+      else let factor = row !! pivotCol in zipWith (\a b -> a - factor * b) row newRow
+
 
 simplexAlgorithm :: Tableau -> Maybe Tableau
 simplexAlgorithm tableau =
@@ -80,4 +91,12 @@ simplexAlgorithm tableau =
          Nothing -> Just tableau -- optimal solution found
          Just pivotCol -> case findPivotRow tableau pivotCol of
                                Nothing -> Nothing -- unbounded
-                               Just pivotRow -> simplexAlgorithm $ performPivot tableau pivotRow pivotCol
+                               Just pivotRow -> simplexAlgorithm $ performPivotSingleThreaded tableau pivotRow pivotCol
+
+extractSolution :: Tableau -> [Double]
+extractSolution tableau =
+    let nVars = length (head tableau) - length tableau -- number of decision variables
+        finalRow = last tableau
+        rhs = map last (init tableau) -- right-hand side of the constraints
+        solution = take nVars finalRow ++ rhs
+    in solution
